@@ -114,8 +114,9 @@ def ResNet152(img_channel):
 
 
 def test():
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     net = ResNet101(img_channel=3)
-    y = net(torch.randn(4, 3, 224, 224)).to('cuda')
+    y = net(torch.randn(4, 3, 224, 224)).to(device)
     print(y.size())
 
 
