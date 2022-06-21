@@ -8,7 +8,7 @@ import numpy as np
 # ================== initialization ===================================
 # testing params
 cam_id = 1
-sampling_rate = 5
+sampling_rate = 5 # fps
 
 # path is hard coded since the data is stored in my external drive :)
 path = "D://university//aps//MTA_ext_short//MTA_ext_short//train//cam_{}".format(cam_id)
@@ -26,8 +26,6 @@ cal_csv = pd.read_csv(cal_csv_path, nrows=1)
 annotated_csv = pd.read_csv(cal_csv_path)
 print("All position labelling data loading finished in %s seconds ---" % (time.time() - start_time))
 
-video_capture = cv2.VideoCapture(video_path)
-
 # BB default color
 color = (0, 255, 0)
 
@@ -43,7 +41,7 @@ index_p = cal_csv.iloc[0]["person_id"]
 x_p = cal_csv.iloc[0]["x_3D_person"]
 y_p = cal_csv.iloc[0]["y_3D_person"]
 
-approx_h = 170
+approx_h = 2000 # ADJUST THIS AND LOOK AT THE PLOT
 dis = math.sqrt((x_cam - x_p) ** 2 + (y_cam - y_p) ** 2)
 pixel_h_top = cam_coords[(cam_coords.frame_no_cam == 0) &
                          (cam_coords.person_id == index_p)]["y_top_left_BB"].to_list()[0]
@@ -151,13 +149,13 @@ while cap.isOpened():
 
                 # width accuracy testing ====================================================
                 xdis = abs(tar_pair[i][0].xC - tar_pair[i][1].xC) * cam_w / 1920
+                # actual_w = math.sqrt((label_1[0] - label_2[0]) ** 2 + (label_1[1] - label_2[1]) ** 2)
+
+                dis_pair = math.sqrt(depth ** 2 + xdis ** 2)
                 actual_w = math.sqrt((label_1[0] - label_2[0]) ** 2 + (label_1[1] - label_2[1]) ** 2)
 
-                observed_w.append(xdis)
+                observed_w.append(dis_pair)
                 accurate_w.append(actual_w)
-
-                # dis_pair = math.sqrt(depth ** 2 + xdis ** 2)
-
                 # print(dis_pair)
                 # if dis_pair<10:
                 #     cv2.line(frame, (tar_pair[i][0].xC, tar_pair[i][0].yC), (tar_pair[i][1].xC, tar_pair[i][1].yC),
@@ -187,8 +185,8 @@ plt.ylabel('Actual depth')
 plt.figure()
 plt.scatter(observed_w, accurate_w, color='b')
 plt.plot(xpoints, ypoints)
-plt.xlabel('Extrapolated width')
-plt.ylabel('Actual width')
+plt.xlabel('Distance approximation')
+plt.ylabel('Actual distance')
 
 
 plt.show()
