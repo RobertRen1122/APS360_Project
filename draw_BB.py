@@ -1,7 +1,8 @@
-import os, cv2, itertools, math
+import os, cv2, itertools, math, time
+import matplotlib.pyplot as plt
 import pandas as pd
 
-# import numpy as np
+import numpy as np
 # import tqdm
 
 # ================== initialization ===================================
@@ -18,8 +19,13 @@ cal_csv_path = os.path.join(calibration_path, "coords_cam_{}.csv".format(cam_id)
 video_path = os.path.join(path, "cam_{}.mp4".format(cam_id))
 
 # create dataframe from csv file and read video
+start_time = time.time()
 cam_coords = pd.read_csv(csv_path)
+print("Bounding Box Data loading finished in %s seconds ---" % (time.time() - start_time))
 cal_csv = pd.read_csv(cal_csv_path, nrows=1)
+annotated_csv = pd.read_csv(cal_csv_path)
+print("All position labelling data loading finished in %s seconds ---" % (time.time() - start_time))
+
 video_capture = cv2.VideoCapture(video_path)
 
 # BB default color
@@ -38,22 +44,27 @@ x_p = cal_csv.iloc[0]["x_3D_person"]
 y_p = cal_csv.iloc[0]["y_3D_person"]
 
 approx_h = 170
-dis = math.sqrt((x_cam-x_p)**2 + (y_cam-y_p)**2)
-pixel_h_top = cam_coords[cam_coords.frame_no_cam == 0][cam_coords.person_id == index_p]["y_top_left_BB"].to_list()[0]
-pixel_h_bottom = cam_coords[cam_coords.frame_no_cam == 0][cam_coords.person_id == index_p]["y_bottom_right_BB"].to_list()[0]
-pixel_h = abs(pixel_h_top-pixel_h_bottom)
+dis = math.sqrt((x_cam - x_p) ** 2 + (y_cam - y_p) ** 2)
+pixel_h_top = cam_coords[(cam_coords.frame_no_cam == 0) &
+                         (cam_coords.person_id == index_p)]["y_top_left_BB"].to_list()[0]
+pixel_h_bottom = cam_coords[(cam_coords.frame_no_cam == 0) &
+                            (cam_coords.person_id == index_p)]["y_bottom_right_BB"].to_list()[0]
+pixel_h = abs(pixel_h_top - pixel_h_bottom)
 
 # calculate the focus length
-focus_len = pixel_h*dis/approx_h
+focus_len = pixel_h * dis / approx_h
 
-#approximating the horizontal dis
+# approximating the horizontal dis
 cam_w = 50
+
+
 # ================== helper fcn =======================================
 def drawBoundingBox(image, BB):
     cv2.line(image, (BB.xT, BB.yT), (BB.xT, BB.yB), color, thickness=1)
     cv2.line(image, (BB.xB, BB.yT), (BB.xB, BB.yB), color, thickness=1)
     cv2.line(image, (BB.xT, BB.yB), (BB.xB, BB.yB), color, thickness=1)
     cv2.line(image, (BB.xT, BB.yT), (BB.xB, BB.yT), color, thickness=1)
+
 
 # ================== BB class =========================================
 
@@ -64,8 +75,9 @@ class BB:
     yB = 0
     xC = 0
     yC = 0
+    id = -1
 
-    def __init__(self, xt, yt, xb, yb):
+    def __init__(self, xt, yt, xb, yb, pid):
         self.xT = xt
         self.yT = yt
         self.xB = xb
@@ -73,8 +85,14 @@ class BB:
         self.xC = (xb + xt) // 2
         # self.yC = (yb + yt) // 2
         self.yC = yb
+        self.id = pid
 
 
+# ================== accuracy graph initialization ====================
+observed_d = []
+accurate_d = []
+observed_w = []
+accurate_w = []
 # ================== creating video data ==============================
 
 count = 0
@@ -85,13 +103,27 @@ while cap.isOpened():
     # gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     # print(count)
     if count % sampling_rate == 0:
+        bbox_list = []
+        accurate_dict = {}
         xT = cam_coords[cam_coords.frame_no_cam == count]["x_top_left_BB"].to_list()
         yT = cam_coords[cam_coords.frame_no_cam == count]["y_top_left_BB"].to_list()
         xB = cam_coords[cam_coords.frame_no_cam == count]["x_bottom_right_BB"].to_list()
         yB = cam_coords[cam_coords.frame_no_cam == count]["y_bottom_right_BB"].to_list()
-        bbox_list = []
+        p_ID = cam_coords[cam_coords.frame_no_cam == count]["person_id"].to_list()
+
+        # for depth precision checking
+        xP = annotated_csv[(annotated_csv.frame_no_cam == count) &
+                           (annotated_csv.joint_type == 0)]["x_3D_person"].to_list()
+        yP = annotated_csv[(annotated_csv.frame_no_cam == count) &
+                           (annotated_csv.joint_type == 0)]["y_3D_person"].to_list()
+        p_id_annotated = annotated_csv[(annotated_csv.frame_no_cam == count) &
+                                       (annotated_csv.joint_type == 0)]["person_id"].to_list()
+
+        for i in range(len(p_id_annotated)):
+            accurate_dict[p_id_annotated[i]] = [xP[i], yP[i]]
+
         for i in range(len(xT)):
-            bbox = BB(xT[i], yT[i], xB[i], yB[i])
+            bbox = BB(xT[i], yT[i], xB[i], yB[i], p_ID[i])
             drawBoundingBox(frame, bbox)
             bbox_list.append(bbox)
 
@@ -99,14 +131,34 @@ while cap.isOpened():
             tar_pair = list(itertools.combinations(bbox_list, 2))
 
             for i in range(len(tar_pair)):
-
                 # check distance here, if too close draw the distance line
-                ydis1 = approx_h * focus_len / (tar_pair[i][0].yT - tar_pair[i][0].yB)
-                ydis2 = approx_h * focus_len / (tar_pair[i][1].yT - tar_pair[i][1].yB)
-                xdis = abs(tar_pair[i][0].xC-tar_pair[i][1].xC)*cam_w/1920
-                dis_pair = math.sqrt(abs(ydis1-ydis2)**2+xdis**2)
+
+                label_1 = accurate_dict[tar_pair[i][0].id]
+                label_2 = accurate_dict[tar_pair[i][1].id]
+
+                # depth accuracy testing =====================================================
+                ydis1 = approx_h * focus_len / (tar_pair[i][0].yB - tar_pair[i][0].yT)
+                ydis2 = approx_h * focus_len / (tar_pair[i][1].yB - tar_pair[i][1].yT)
+
+                depth = abs(ydis1 - ydis2)
+                actual_dis1 = math.sqrt((label_1[0] - x_cam) ** 2 + (label_1[1] - y_cam) ** 2)
+                actual_dis2 = math.sqrt((label_2[0] - x_cam) ** 2 + (label_2[1] - y_cam) ** 2)
+
+                observed_d.append(ydis1)
+                observed_d.append(ydis2)
+                accurate_d.append(actual_dis1)
+                accurate_d.append(actual_dis2)
+
+                # width accuracy testing ====================================================
+                xdis = abs(tar_pair[i][0].xC - tar_pair[i][1].xC) * cam_w / 1920
+                actual_w = math.sqrt((label_1[0] - label_2[0]) ** 2 + (label_1[1] - label_2[1]) ** 2)
+
+                observed_w.append(xdis)
+                accurate_w.append(actual_w)
+
+                # dis_pair = math.sqrt(depth ** 2 + xdis ** 2)
+
                 # print(dis_pair)
-                # D’ = (W x F) / P
                 # if dis_pair<10:
                 #     cv2.line(frame, (tar_pair[i][0].xC, tar_pair[i][0].yC), (tar_pair[i][1].xC, tar_pair[i][1].yC),
                 #              dis_color, thickness=1)
@@ -118,5 +170,25 @@ while cap.isOpened():
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
     count += 1
+
 cap.release()
 cv2.destroyAllWindows()
+
+
+# depth plot
+plt.scatter(observed_d, accurate_d, color='r')
+xpoints = np.array([0, 100])
+ypoints = np.array([0, 100])
+plt.plot(xpoints, ypoints)
+plt.xlabel('Extrapolated depth')
+plt.ylabel('Actual depth')
+
+# width plot
+plt.figure()
+plt.scatter(observed_w, accurate_w, color='b')
+plt.plot(xpoints, ypoints)
+plt.xlabel('Extrapolated width')
+plt.ylabel('Actual width')
+
+
+plt.show()
