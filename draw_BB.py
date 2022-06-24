@@ -7,7 +7,7 @@ import numpy as np
 
 # ================== initialization ===================================
 # testing params
-cam_id = 1
+cam_id = 2
 sampling_rate = 5  # fps
 
 # path is hard coded since the data is stored in my external drive :)
