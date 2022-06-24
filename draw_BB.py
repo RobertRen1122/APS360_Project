@@ -142,7 +142,7 @@ while cap.isOpened():
                 ydis2 = approx_h * focus_len / (tar_pair[i][1].yB - tar_pair[i][1].yT)
                 # y bottom > top
                 # x bottom > top
-                print(tar_pair[i][0].xB, tar_pair[i][0].xT)
+                # print(tar_pair[i][0].xB, tar_pair[i][0].xT)
                 depth = abs(ydis1 - ydis2)
                 actual_dis1 = math.sqrt((label_1[0] - x_cam) ** 2 + (label_1[1] - y_cam) ** 2)
                 actual_dis2 = math.sqrt((label_2[0] - x_cam) ** 2 + (label_2[1] - y_cam) ** 2)
@@ -159,7 +159,12 @@ while cap.isOpened():
                 w_to_cam_2 = tar_pair[i][1].xC - x_center
                 h_to_cam_2 = 1080 - tar_pair[i][1].yB
 
+                theta_1 = math.atan(h_to_cam_1/w_to_cam_1)
+                theta_2 = math.atan(h_to_cam_2/w_to_cam_2)
 
+                D = math.sqrt(ydis1**2+ydis2**2-2*ydis2*ydis1*math.cos(theta_1-theta_2))
+                # print(w_to_cam_1, w_to_cam_2)
+                # print(h_to_cam_1, h_to_cam_2)
 
                 xdis = abs(tar_pair[i][0].xC - tar_pair[i][1].xC) * cam_w / 1920
                 # actual_w = math.sqrt((label_1[0] - label_2[0]) ** 2 + (label_1[1] - label_2[1]) ** 2)
@@ -167,7 +172,7 @@ while cap.isOpened():
                 dis_pair = math.sqrt(depth ** 2 + xdis ** 2)
                 actual_w = math.sqrt((label_1[0] - label_2[0]) ** 2 + (label_1[1] - label_2[1]) ** 2)
 
-                observed_w.append(dis_pair)
+                observed_w.append(D)
                 accurate_w.append(actual_w)
                 # print(dis_pair)
                 # if dis_pair<10:
