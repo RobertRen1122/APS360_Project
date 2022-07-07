@@ -3,3 +3,4 @@ object_detection/data/
 data_processing/visualization_data/
 *.mp4
 *.avi
+*.csv
