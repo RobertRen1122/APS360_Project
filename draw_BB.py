@@ -8,11 +8,11 @@ import numpy as np
 # ================== initialization ===================================
 # testing params
 cam_id = 2
-sampling_rate = 5  # fps
+sampling_rate = 1  # fps
 
 # path is hard coded since the data is stored in my external drive :)
-path = "D://university//aps//MTA_ext_short//MTA_ext_short//train//cam_{}".format(cam_id)
-calibration_path = "D://university//aps//MTA_ext_short_coords//train//cam_{}".format(cam_id)
+path = "C:\\Users\\Shadow\\Downloads\\MTA_ext_short\\MTA_ext_short\\train\\cam_{}".format(cam_id)
+calibration_path = "C:\\Users\\Shadow\\Downloads\\MTA_ext_short_coords\\MTA_ext_short_coords\\train\\cam_{}".format(cam_id)
 # get the csv bounding box data as well as the video data
 csv_path = os.path.join(path, "coords_fib_cam_{}.csv".format(cam_id))
 cal_csv_path = os.path.join(calibration_path, "coords_cam_{}.csv".format(cam_id))
@@ -41,7 +41,6 @@ index_p = cal_csv.iloc[0]["person_id"]
 x_p = cal_csv.iloc[0]["x_3D_person"]
 y_p = cal_csv.iloc[0]["y_3D_person"]
 
-approx_h = 1.8  # ADJUST THIS AND LOOK AT THE PLOT
 dis = math.sqrt((x_cam - x_p) ** 2 + (y_cam - y_p) ** 2)
 pixel_h_top = cam_coords[(cam_coords.frame_no_cam == 0) &
                          (cam_coords.person_id == index_p)]["y_top_left_BB"].to_list()[0]
@@ -50,7 +49,7 @@ pixel_h_bottom = cam_coords[(cam_coords.frame_no_cam == 0) &
 pixel_h = abs(pixel_h_top - pixel_h_bottom)
 
 # calculate the focus length
-focus_len = pixel_h * dis / approx_h
+focus_len = pixel_h * dis
 
 # approximating the horizontal dis
 cam_w = 50
@@ -138,8 +137,8 @@ while cap.isOpened():
                 label_2 = accurate_dict[tar_pair[i][1].id]
 
                 # depth accuracy testing =====================================================
-                ydis1 = approx_h * focus_len / (tar_pair[i][0].yB - tar_pair[i][0].yT)
-                ydis2 = approx_h * focus_len / (tar_pair[i][1].yB - tar_pair[i][1].yT)
+                ydis1 = focus_len / (tar_pair[i][0].yB - tar_pair[i][0].yT)
+                ydis2 = focus_len / (tar_pair[i][1].yB - tar_pair[i][1].yT)
                 # y bottom > top
                 # x bottom > top
                 # print(tar_pair[i][0].xB, tar_pair[i][0].xT)
@@ -178,12 +177,12 @@ while cap.isOpened():
                 # if dis_pair<10:
                 #     cv2.line(frame, (tar_pair[i][0].xC, tar_pair[i][0].yC), (tar_pair[i][1].xC, tar_pair[i][1].yC),
                 #              dis_color, thickness=1)
-                cv2.line(frame, (tar_pair[i][0].xC, tar_pair[i][0].yC), (tar_pair[i][1].xC, tar_pair[i][1].yC),
-                         dis_color, thickness=1)
+##                cv2.line(frame, (tar_pair[i][0].xC, tar_pair[i][0].yC), (tar_pair[i][1].xC, tar_pair[i][1].yC),
+##                         dis_color, thickness=1)
 
         cv2.imshow('frame', frame)
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):
+    if cv2.waitKey(1) & 0xFF == ord('s'):
         break
     count += 1
 
@@ -191,20 +190,20 @@ cap.release()
 cv2.destroyAllWindows()
 
 
-# depth plot
-plt.scatter(observed_d, accurate_d, color='r')
-xpoints = np.array([0, 100])
-ypoints = np.array([0, 100])
-plt.plot(xpoints, ypoints)
-plt.xlabel('Extrapolated depth')
-plt.ylabel('Actual depth')
-
-# width plot
-plt.figure()
-plt.scatter(observed_w, accurate_w, color='b')
-plt.plot(xpoints, ypoints)
-plt.xlabel('Distance approximation')
-plt.ylabel('Actual distance')
-
-
-plt.show()
+### depth plot
+##plt.scatter(observed_d, accurate_d, color='r')
+##xpoints = np.array([0, 100])
+##ypoints = np.array([0, 100])
+##plt.plot(xpoints, ypoints)
+##plt.xlabel('Extrapolated depth')
+##plt.ylabel('Actual depth')
+##
+### width plot
+##plt.figure()
+##plt.scatter(observed_w, accurate_w, color='b')
+##plt.plot(xpoints, ypoints)
+##plt.xlabel('Distance approximation')
+##plt.ylabel('Actual distance')
+##
+##
+##plt.show()
