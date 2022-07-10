@@ -7,15 +7,16 @@ import numpy as np
 
 # ================== initialization ===================================
 # testing params
-cam_id = 2
-sampling_rate = 1  # fps
+cam_id = 5
+sampling_rate = 5  # fps
+clear = 5 #people with this numer of occluded joints will be removed 
 
 # path is hard coded since the data is stored in my external drive :)
 path = "C:\\Users\\Shadow\\Downloads\\MTA_ext_short\\MTA_ext_short\\train\\cam_{}".format(cam_id)
 calibration_path = "C:\\Users\\Shadow\\Downloads\\MTA_ext_short_coords\\MTA_ext_short_coords\\train\\cam_{}".format(cam_id)
 # get the csv bounding box data as well as the video data
 csv_path = os.path.join(path, "coords_fib_cam_{}.csv".format(cam_id))
-cal_csv_path = os.path.join(calibration_path, "coords_cam_{}.csv".format(cam_id))
+cal_csv_path = os.path.join(calibration_path, "clear_{}_coords_cam_{}.csv".format(clear, cam_id))
 video_path = os.path.join(path, "cam_{}.mp4".format(cam_id))
 
 # create dataframe from csv file and read video
@@ -133,8 +134,11 @@ while cap.isOpened():
             for i in range(len(tar_pair)):
                 # check distance here, if too close draw the distance line
 
-                label_1 = accurate_dict[tar_pair[i][0].id]
-                label_2 = accurate_dict[tar_pair[i][1].id]
+                try:
+                    label_1 = accurate_dict[tar_pair[i][0].id]
+                    label_2 = accurate_dict[tar_pair[i][1].id]
+                except:
+                    break
 
                 # depth accuracy testing =====================================================
                 ydis1 = focus_len / (tar_pair[i][0].yB - tar_pair[i][0].yT)
@@ -190,20 +194,20 @@ cap.release()
 cv2.destroyAllWindows()
 
 
-### depth plot
-##plt.scatter(observed_d, accurate_d, color='r')
-##xpoints = np.array([0, 100])
-##ypoints = np.array([0, 100])
-##plt.plot(xpoints, ypoints)
-##plt.xlabel('Extrapolated depth')
-##plt.ylabel('Actual depth')
-##
-### width plot
-##plt.figure()
-##plt.scatter(observed_w, accurate_w, color='b')
-##plt.plot(xpoints, ypoints)
-##plt.xlabel('Distance approximation')
-##plt.ylabel('Actual distance')
-##
-##
-##plt.show()
+# depth plot
+plt.scatter(observed_d, accurate_d, color='r')
+xpoints = np.array([0, 100])
+ypoints = np.array([0, 100])
+plt.plot(xpoints, ypoints)
+plt.xlabel('Extrapolated depth')
+plt.ylabel('Actual depth')
+
+# width plot
+plt.figure()
+plt.scatter(observed_w, accurate_w, color='b')
+plt.plot(xpoints, ypoints)
+plt.xlabel('Distance approximation')
+plt.ylabel('Actual distance')
+
+
+plt.show()
