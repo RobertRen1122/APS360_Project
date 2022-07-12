@@ -115,7 +115,7 @@ def train(model, train_loader, val_loader, batch_size=64, l_r=0.01, num_epochs=1
             # accuracy calcualtion
             dist = F.pairwise_distance(out1, out2).cpu()
             for j in range(dist.size()[0]):
-                if dist.data.numpy()[j] < 0.5:
+                if dist.data.numpy()[j] < 0.55:
                     if label.cpu().data.numpy()[j] == 1:
                         train_correct += 1
 
@@ -136,10 +136,9 @@ def train(model, train_loader, val_loader, batch_size=64, l_r=0.01, num_epochs=1
         val_correct = 0
         val_total = 0
         c_m = False
+        if epoch == num_epochs - 1:
+            c_m = True
         for imgs, data in enumerate(val_loader, 0):
-            if imgs == len(val_loader)-1:
-                c_m = True
-
             val_img0, val_img1, val_label = data
             #############################################
             # To Enable GPU Usage
@@ -154,7 +153,7 @@ def train(model, train_loader, val_loader, batch_size=64, l_r=0.01, num_epochs=1
             # accuracy calcualtion
             dist = F.pairwise_distance(val_out1, val_out2).cpu()
             for j in range(dist.size()[0]):
-                if dist.data.numpy()[j] < 0.8:
+                if dist.data.numpy()[j] < 0.9:
                     if val_label.cpu().data.numpy()[j] == 1:
                         val_correct += 1  # true positive
                         if c_m:
@@ -228,10 +227,10 @@ if __name__ == "__main__":
     pair_path = "D://university//aps//pair_list.txt"
 
     epoch_num = 10
-    train_size = 1000
-    val_size = 100
+    train_size = 2000
+    val_size = 500
     batch_s = 32
-    learning_rate = 0.001
+    learning_rate = 0.0001
     use_cuda = True
     ###############################################################
     # Data Folder loading => loading images by target classes
