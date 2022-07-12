@@ -22,16 +22,13 @@ from SiameseNetworkDataset import SiameseNetworkDataset
 def loader_grapher(data, batch_size):
     """graph the customized loader for testing loader
     functionality purposes
-
-    -> Note that the loader generated each time is unique
-    -> so running the same function for multiple times might
-    -> generate different graphs
     """
 
     # Create a simple dataloader just for simple visualization
     v_loader = DataLoader(data, num_workers=2, batch_size=batch_size)
 
     data_iter = iter(v_loader)
+    ex_batch = next(data_iter)
     ex_batch = next(data_iter)
 
     plot = [[], []]
@@ -42,6 +39,13 @@ def loader_grapher(data, batch_size):
 
     idx1 = random.choice(list(range(batch_size)))
     idx2 = random.choice(list(range(batch_size)))
+    print(idx1, " ", idx2)
+
+    mse_num1 = mse(ex_batch[0][idx1].detach().numpy(), ex_batch[1][idx1].detach().numpy())
+    mse_num2 = mse(ex_batch[0][idx2].detach().numpy(), ex_batch[1][idx2].detach().numpy())
+    print(mse_num1, " ", mse_num2)
+
+
     plt.subplot(2, 2, 1)
     plt.imshow(plot[0][idx1])
     plt.subplot(2, 2, 2)
@@ -56,22 +60,6 @@ def loader_grapher(data, batch_size):
     print(ex_batch[2].numpy())
 
 
-def rmse(org_img, pred_img, max_p: int = 4095) -> float:
-    """
-    Root Mean Squared Error
-    Calculated individually for all bands, then averaged
-    """
-
-    rmse_bands = []
-    for i in range(org_img.shape[2]):
-        dif = np.subtract(org_img[:, :, i], pred_img[:, :, i])
-        m = np.mean(np.square(dif / max_p))
-        s = np.sqrt(m)
-        rmse_bands.append(s)
-
-    return np.mean(rmse_bands)
-
-
 def mse(imageA, imageB):
     """Mean Squared Error evaluation between two images"""
 
@@ -84,23 +72,43 @@ def mse(imageA, imageB):
 def baseline_reid(loader):
     total_num = 0
     correct = 0
+    threshold = 40
     pbar = tqdm(desc='while loop', total=len(loader))
-
+    confusion_matrix = [[0, 0], [0, 0]]
     for imgs, data in enumerate(loader, 0):
         img0, img1, label = data
         for i in range(img0.shape[0]):
             mse_num = mse(img0[i].detach().numpy(), img1[i].detach().numpy())
+            # print(mse_num)
             true_l = label[i].item()
 
-            if (mse_num < 10) and (true_l == True):
-                correct += 1
-            elif (mse_num > 10) and (true_l == False):
-                correct += 1
-
+            if (mse_num < threshold) and (true_l == True):
+                correct += 1  # true positive
+                confusion_matrix[1][1] += 1
+            elif (mse_num < threshold) and (true_l == False):
+                # false positive
+                confusion_matrix[0][1] += 1
+            elif (mse_num > threshold) and (true_l == False):
+                correct += 1  # true negative
+                confusion_matrix[0][0] += 1
+            elif (mse_num > threshold) and (true_l == True):
+                # false negative
+                confusion_matrix[1][0] += 1
             total_num += 1
         pbar.update(1)
+    # print("true positive: ", confusion_matrix[1][1])
+    # print("true negative: ", confusion_matrix[0][0])
+    ax = sns.heatmap(confusion_matrix / np.sum(confusion_matrix),
+                     annot=True, cmap='Blues')
 
-    print(correct/total_num)
+    ax.set_title('Confusion Matrix \n')
+    ax.set_xlabel('Predicted Values')
+    ax.set_ylabel('Actual Values ')
+    ax.xaxis.set_ticklabels(['False', 'True'])
+    ax.yaxis.set_ticklabels(['False', 'True'])
+    plt.show()
+
+    print(correct / total_num)
 
 
 if __name__ == "__main__":
@@ -111,13 +119,11 @@ if __name__ == "__main__":
     new_path = "D://university//aps//reid//"
     pair_path = "D://university//aps//pair_list.txt"
 
-    epoch_num = 10
-    train_size = 9500
-    val_size = 100
+    train_size = 9999
     batch_s = 32
-    learning_rate = 0.001
     ###############################################################
     # Data Folder loading => loading images by target classes
+
     start_time = time.time()
     folder_dataset = datasets.ImageFolder(new_path)
 
@@ -129,7 +135,7 @@ if __name__ == "__main__":
     transformation = transforms.Compose(
         [transforms.ToTensor(),
          transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-         transforms.Resize((100, 100))])
+         transforms.Resize((228, 228))])
 
     # Convert ImageFolder data into customized Dataset combo
     # => (image1, image2, label)
@@ -142,9 +148,11 @@ if __name__ == "__main__":
     start_time = time.time()
     ###############################################################
     # create dataloader for training and validation batch
-    train_loader = DataLoader(siamese_dataset, num_workers=1,
-                              batch_size=batch_s, sampler=train_sampler)
+    loader_grapher(siamese_dataset, 8)
 
-    print(time.time() - start_time, "seconds")
-
-    baseline_reid(train_loader)
+    # train_loader = DataLoader(siamese_dataset, num_workers=1,
+    #                           batch_size=batch_s, sampler=train_sampler)
+    #
+    # print(time.time() - start_time, "seconds")
+    #
+    # baseline_reid(train_loader)
