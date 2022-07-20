@@ -11,7 +11,7 @@ def frames_to_vid(cam_id, frame_rate):
     img_files = os.listdir(frames_dir)
     videos_dir = 'bboxed_videos'
     exists = os.path.exists(videos_dir)
-    if exists:
+    if not exists:
         os.makedirs(videos_dir, exist_ok=False)
     for f in img_files:
         if '.jpg' not in f:
