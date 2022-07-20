@@ -2,3 +2,12 @@
 *.mp4
 *.avi
 *.csv
+data_preparation/cam_0
+data_preparation/cam_1
+data_preparation/cam_2
+data_preparation/cam_3
+data_preparation/cam_4
+data_preparation/cam_5
+data_preparation/cam_0_bboxed
+data_preparation/cam_0_resized
+data_preparation/bboxed_videos
