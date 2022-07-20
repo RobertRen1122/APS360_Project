@@ -10,4 +10,14 @@ data_preparation/cam_4
 data_preparation/cam_5
 data_preparation/cam_0_bboxed
 data_preparation/cam_0_resized
+data_preparation/cam_1_bboxed
+data_preparation/cam_1_resized
+data_preparation/cam_2_bboxed
+data_preparation/cam_2_resized
+data_preparation/cam_3_bboxed
+data_preparation/cam_3_resized
+data_preparation/cam_4_bboxed
+data_preparation/cam_4_resized
+data_preparation/cam_5_bboxed
+data_preparation/cam_5_resized
 data_preparation/bboxed_videos
