@@ -59,7 +59,8 @@ if __name__ == "__main__":
     ###############################################################
     # Initialization
 
-    image_path = "D://university//aps//MTA_reid//MTA_reid//train//"
+    image_path = "D://university//reidtraining//train//"
+    # D:\university\reidtraining
     new_path = "D://university//aps//reid//"
 
     ###############################################################

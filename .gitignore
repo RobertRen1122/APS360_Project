@@ -2,3 +2,4 @@
 *.mp4
 *.avi
 *.csv
+/person_re_id/saved_model/

@@ -6,14 +6,11 @@ import numpy as np
 import seaborn as sns
 from tqdm.auto import tqdm
 import matplotlib.pyplot as plt
-import torch.nn.functional as F
 from torch.utils.data import DataLoader
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 from torch.utils.data.sampler import SubsetRandomSampler
 
-from SiameseNet import SiameseNet
-from contrastive_loss import ContrastiveLoss
 from SiameseNetworkDataset import SiameseNetworkDataset
 
 
