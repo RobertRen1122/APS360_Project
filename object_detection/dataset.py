@@ -51,7 +51,7 @@ class MTADataset(torch.utils.data.Dataset):
                 height * self.S
             )
             if label_matrix[i, j, self.C] == 0:
-                label_matrix[i, j, 20] = 1
+                label_matrix[i, j, self.C] = 1
 
                 box_coordinates = torch.tensor(
                     [x_cell, y_cell, width_cell, height_cell]

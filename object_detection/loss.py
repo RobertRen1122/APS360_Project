@@ -5,6 +5,7 @@ from utils import intersection_over_union
 class YOLOLoss(nn.Module):
     def __init__(self, S=7, B=2, C=1):
         super(YOLOLoss, self).__init__()
+        self.mse = nn.MSELoss(reduction="sum")
         self.S = S
         self.B = B
         self.C = C

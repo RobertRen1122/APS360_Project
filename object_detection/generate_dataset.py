@@ -79,7 +79,7 @@ def generate():
         if file.endswith('.csv'):
             csv_file = os.path.join(RAW_DIR, file)
 
-    # vid_to_frame(vid_dir=vid_file)
+    vid_to_frame(vid_dir=vid_file)
     for i in range(4922):
         coords = parse_coords(csv_file, i)
         filename = os.path.join(LABEL_DIR, f'{i}.txt')
