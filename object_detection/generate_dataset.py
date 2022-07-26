@@ -10,8 +10,6 @@ WIDTH = 1920
 HEIGHT = 1080
 NUM_IMAGES = 4922
 
-# TODO: for labels folder -> a text file for each frame, [person, x_midpoint, y_midpoint, width, height]
-# TODO: get train.csv and test.csv which includes the files for training and testing
 
 def coords_conversion(coords_list):
     # https://christianbernecker.medium.com/convert-bounding-boxes-from-coco-to-pascal-voc-to-yolo-and-back-660dc6178742
@@ -39,6 +37,7 @@ def vid_to_frame(vid_dir):
             break
         frame_num += 1
     print(f'Obtained {length} frames with a frame rate of {fps}')
+
 
 def create_train_test_csv(train_ratio=0.8):
     num_train_imgs = int(train_ratio * NUM_IMAGES)
@@ -90,7 +89,6 @@ def generate():
             with open(filename, 'w') as f:
                 f.write(coords_string)
         print(f'Finished writing {num_lines} lines for frame {i}')
-
 
 
 if __name__ == '__main__':

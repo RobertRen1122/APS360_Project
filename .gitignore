@@ -21,3 +21,4 @@ data_preparation/cam_4_resized
 data_preparation/cam_5_bboxed
 data_preparation/cam_5_resized
 data_preparation/bboxed_videos
+object_detection/data
