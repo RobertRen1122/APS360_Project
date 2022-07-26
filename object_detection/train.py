@@ -17,6 +17,7 @@ from utils import (
     load_checkpoint,
 )
 from loss import YOLOLoss
+import matplotlib.pyplot as plt
 
 seed = 42
 torch.manual_seed(42)
@@ -66,6 +67,7 @@ def train_fn(train_loader, model, optimizer, loss_fn):
         loop.set_postfix(loss=loss.item())
 
     print(f'Mean loss was {sum(mean_loss) / len(mean_loss)}')
+    return sum(mean_loss) / len(mean_loss)
 
 
 def main():
@@ -109,21 +111,42 @@ def main():
         drop_last=True
     )
 
+    mAPs = []
+    mLosses = []
+    iters = []
+    n = 0
     for epoch in range(EPOCHS):
+        iters.append(n)
         pred_boxes, target_boxes = get_bboxes(
             train_loader, model, iou_threshold=0.5, threshold=0.4
         )
         mean_avg_prec = mean_average_precision(
             pred_boxes, target_boxes, iou_threshold=0.5, box_format='midpoint'
         )
+        mAPs.append(float(mean_avg_prec))
+
         print(f'Train mAP: {mean_avg_prec}')
-        if mean_avg_prec > 0.85:
+        if mean_avg_prec > 0.65:
             checkpoint = {
                 'state_dict': model.state_dict(),
                 'optimizer': optimizer.state_dict()
             }
             save_checkpoint(checkpoint, filename=LOAD_MODEL_FILE)
-        train_fn(train_loader, model, optimizer, loss_fn)
+        mLoss = train_fn(train_loader, model, optimizer, loss_fn)
+        mLosses.append(float(mLoss))
+        n += 1
+
+    plt.title("Training Curve")
+    plt.plot(iters, mLosses, label="Train")
+    plt.xlabel("Iterations")
+    plt.ylabel("Loss")
+    plt.savefig('Loss_Training_Curve.png')
+
+    plt.title("Training Curve")
+    plt.plot(iters, mAPs, label="Train")
+    plt.xlabel("Iterations")
+    plt.ylabel("mAP")
+    plt.savefig('mAP_Training_Curve.png')
 
 
 if __name__ == '__main__':
