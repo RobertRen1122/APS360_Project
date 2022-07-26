@@ -57,7 +57,6 @@ def parse_coords(csv_dir, frame_no):
         # print(f'Coords set {i}: {x_top_left, y_top_left, x_bottom_right, y_bottom_right}')
         coordinates = [x_top_left, y_top_left, x_bottom_right, y_bottom_right]
         scaled_coordinates = coords_conversion(coordinates)
-        scaled_coordinates.insert(0, 1)
         coord_list.append(scaled_coordinates)
     # print(f'There are {len(coord_list)} bounding boxes in frame {frame_no}')
     return coord_list
@@ -83,11 +82,12 @@ def generate():
         coords = parse_coords(csv_file, i)
         filename = os.path.join(LABEL_DIR, f'{i}.txt')
         num_lines = 0
-        for coords_set in coords:
-            coords_string = ' '.join(str(x) for x in coords_set)
-            num_lines += 1
-            with open(filename, 'w') as f:
-                f.write(coords_string)
+        with open(filename, 'w') as f:
+            for coords_set in coords:
+                coords_set.insert(0, 1)
+                coords_string = ' '.join(str(x) for x in coords_set)
+                num_lines += 1
+                f.write(coords_string + '\n')
         print(f'Finished writing {num_lines} lines for frame {i}')
 
 
