@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from collections import Counter
-
+import cv2
 
 def intersection_over_union(boxes_preds, boxes_labels, box_format="midpoint"):
     """
@@ -201,6 +201,30 @@ def mean_average_precision(
     return sum(average_precisions) / len(average_precisions)
 
 
+def plot_pred(image, boxes):
+    """Plots predicted bounding boxes on the image"""
+    im = cv2.imread(image)
+    height, width, _ = im.shape
+
+    # box[0] is x midpoint, box[2] is width
+    # box[1] is y midpoint, box[3] is height
+
+    # Create a Rectangle potch
+    for box in boxes:
+        box = box[2:6]
+        assert len(box) == 4, "Got more values than in x, y, w, h, in a box!"
+        upper_left_x = box[0] - box[2] / 2
+        upper_left_y = box[1] - box[3] / 2
+        x1 = abs(upper_left_x * width)
+        print(f'x1 is: {x1}')
+        y1 = int(abs(upper_left_y * height))
+        x2 = int(abs(box[2] * width))
+        y2 = int(abs(box[3] * height))
+        print(x1, y1, x2, y2)
+        cv2.rectangle(im, (x1, y1), (x2, y2), (255, 0, 0), 2)
+    cv2.imwrite('test_plot.jpg')
+
+
 def plot_image(image, boxes):
     """Plots predicted bounding boxes on the image"""
     im = np.array(image)
@@ -216,7 +240,7 @@ def plot_image(image, boxes):
 
     # Create a Rectangle potch
     for box in boxes:
-        box = box[2:]
+        box = box[2:6]
         assert len(box) == 4, "Got more values than in x, y, w, h, in a box!"
         upper_left_x = box[0] - box[2] / 2
         upper_left_y = box[1] - box[3] / 2
