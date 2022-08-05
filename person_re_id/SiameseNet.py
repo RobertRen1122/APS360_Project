@@ -1,4 +1,3 @@
-import torch
 import torch.nn as nn
 
 
@@ -36,32 +35,22 @@ class SiameseNet(nn.Module):
 
         )
 
-
         # Defining the fully connected layers
         self.fc1 = nn.Sequential(
-            nn.Linear(25600, 1024),
+            nn.Linear(43264, 1024),
             nn.ReLU(inplace=True),
             nn.Dropout(p=0.5),
 
             nn.Linear(1024, 128),
             nn.ReLU(inplace=True),
-            nn.Linear(128, 2)
         )
 
-    def forward_once(self, x):
+    def forward(self, x):
         # Forward pass
         output = self.cnn1(x)
-        output = output.view(output.size()[0], -1)# 32 * 173056
+        output = output.view(output.size()[0], -1)  # 32 * 173056
         # output = output.view(-1, 173056)# 32 * 173056
         # print(output.size())
 
         output = self.fc1(output)
         return output
-
-    def forward(self, input1, input2):
-        # forward pass of input 1
-        output1 = self.forward_once(input1)
-        # forward pass of input 2
-        output2 = self.forward_once(input2)
-
-        return output1, output2

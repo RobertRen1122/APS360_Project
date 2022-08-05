@@ -1,6 +1,7 @@
 import os
 import time
 import torch
+import pickle
 import random
 import numpy as np
 import seaborn as sns
@@ -71,7 +72,7 @@ def get_model_name(name, batch_size, learning_rate, epoch):
     return path
 
 
-def train(model, train_loader, val_loader, batch_size=64, l_r=0.01, num_epochs=1):
+def train(model, train_loader, val_loader, batch_size=64, l_r=0.01, num_epochs=1, pvalue = 0.5):
     #################################################################
     # check if there exists a separate model folder exist for saving pretrained weight
     if not os.path.exists('./saved_model'):
@@ -104,18 +105,21 @@ def train(model, train_loader, val_loader, batch_size=64, l_r=0.01, num_epochs=1
             if use_cuda and torch.cuda.is_available():
                 img0, img1, label = img0.cuda(), img1.cuda(), label.cuda()
             #############################################
+            print(img0)
+            print(img1)
 
-            out1, out2 = model(img0, img1)  # forward pass
+            out1, out2 = model(img0), model(img1)  # forward pass
             loss = criterion(out1, out2, label)  # compute the total loss
 
             loss.backward()  # backward pass (compute parameter updates)
             optimizer.step()  # make the updates for each parameter
             optimizer.zero_grad()  # a clean up step for PyTorch
+            torch.cuda.empty_cache()
 
             # accuracy calcualtion
             dist = F.pairwise_distance(out1, out2).cpu()
             for j in range(dist.size()[0]):
-                if dist.data.numpy()[j] < 0.55:
+                if dist.data.numpy()[j] < pvalue:
                     if label.cpu().data.numpy()[j] == 1:
                         train_correct += 1
 
@@ -145,15 +149,20 @@ def train(model, train_loader, val_loader, batch_size=64, l_r=0.01, num_epochs=1
             if use_cuda and torch.cuda.is_available():
                 val_img0, val_img1, val_label = val_img0.cuda(), val_img1.cuda(), val_label.cuda()
             #############################################
+            with torch.no_grad():
+                model.eval()
+                val_out1, val_out2 = model(val_img0), model(val_img1)  # forward pass
+            if use_cuda and torch.cuda.is_available():
+                torch.cuda.empty_cache()
 
-            val_out1, val_out2 = model(val_img0, val_img1)  # forward pass
             val_l += criterion(val_out1, val_out2, val_label).item()  # compute the total loss
             optimizer.zero_grad()
 
             # accuracy calcualtion
             dist = F.pairwise_distance(val_out1, val_out2).cpu()
             for j in range(dist.size()[0]):
-                if dist.data.numpy()[j] < 0.9:
+                print("print here",dist.data.numpy()[j])
+                if dist.data.numpy()[j] < pvalue:
                     if val_label.cpu().data.numpy()[j] == 1:
                         val_correct += 1  # true positive
                         if c_m:
@@ -223,11 +232,11 @@ if __name__ == "__main__":
     # Initialization
     # path to the training set (place that stores the images,
     # not directory to different set)
-    new_path = "D://university//aps//reid//"
-    pair_path = "D://university//aps//pair_list.txt"
+    new_path = "D://university//reidtraining//train_organized"
+    pair_path = "D://university//reidtraining//train_pair_10000.txt"
 
-    epoch_num = 10
-    train_size = 2000
+    epoch_num = 1
+    train_size = 1000
     val_size = 500
     batch_s = 32
     learning_rate = 0.0001
@@ -235,17 +244,17 @@ if __name__ == "__main__":
     ###############################################################
     # Data Folder loading => loading images by target classes
     start_time = time.time()
-    folder_dataset = datasets.ImageFolder(new_path)
+    # folder_dataset = datasets.ImageFolder(new_path)
 
-    print("folder loaded in ", time.time() - start_time, "seconds")
-    start_time = time.time()
+    # print("folder loaded in ", time.time() - start_time, "seconds")
+    # start_time = time.time()
     ###############################################################
     # Dataset Transformation => convert array to tensor, normalize
     # between -1/1, and resize to 100,100
     transformation = transforms.Compose(
         [transforms.ToTensor(),
          transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-         transforms.Resize((100, 100))])
+         transforms.Resize((128, 128))])
 
     # Convert ImageFolder data into customized Dataset combo
     # => (image1, image2, label)
@@ -256,25 +265,33 @@ if __name__ == "__main__":
 
     val_sampler = SubsetRandomSampler(list(range(train_size, train_size + val_size)))
 
-    siamese_dataset = SiameseNetworkDataset(pair_path=pair_path,
-                                            transform=transformation)
+    # siamese_dataset = SiameseNetworkDataset(pair_path=pair_path,
+    #                                         transform=transformation)
 
     print(time.time() - start_time, "seconds")
     start_time = time.time()
+
     ###############################################################
     # create dataloader for training and validation batch
-    train_loader = DataLoader(siamese_dataset, num_workers=1,
+    print("loading pickled data...")
+    with open('image_list_128_128.pkl', 'rb') as f:
+        datalist = pickle.load(f)
+    print("loading pickled data takes", time.time() - start_time, "seconds")
+    start_time = time.time()
+
+    train_loader = DataLoader(datalist,
                               batch_size=batch_s, sampler=train_sampler)
-    val_loader = DataLoader(siamese_dataset, num_workers=1,
+    val_loader = DataLoader(datalist,
                             batch_size=batch_s, sampler=val_sampler)
 
-    print(time.time() - start_time, "seconds")
+    print("loading loaders",time.time() - start_time, "seconds")
 
     model = SiameseNet()
     if use_cuda and torch.cuda.is_available():
         model.cuda()
         print('CUDA is available!  Training on GPU ...\n')
+        print(torch.cuda.get_device_name(torch.cuda.current_device()))
     else:
         print('CUDA is not available.  Training on CPU ...\n')
 
-    train(model, train_loader, val_loader, batch_size=batch_s, l_r=learning_rate, num_epochs=epoch_num)
+    train(model, train_loader, val_loader, batch_size=batch_s, l_r=learning_rate, num_epochs=epoch_num, pvalue=0.2)

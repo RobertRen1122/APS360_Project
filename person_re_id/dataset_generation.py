@@ -50,10 +50,10 @@ def find_pair(img_folder, should_get_same_class):
 
 if __name__ == "__main__":
     ###############################################################
-    image_path = "D://university//aps//reid//"
+    image_path = "D://university//reidtraining//train_organized//"
     ###############################################################
     # Data Folder loading => loading images by target classes
     folder_dataset = MyImageFolder(image_path)
     print("ImageFolder successfully loaded")
 
-    generate_pair_fcn("D://university//aps//", 'pair_list.txt', folder_dataset, 10000)
+    generate_pair_fcn("D://university//reidtraining//", 'train_pair_10000.txt', folder_dataset, 10000)
